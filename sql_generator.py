@@ -26,11 +26,11 @@ gemini_client = OpenAI(
 
 
 FALLBACK_MODELS = [
-    (nvidia_client, "deepseek-ai/deepseek-v4.1-flash"),
+    (gemini_client, "gemini-3.8-flash"),
     (openrouter_client, "qwen/qwen3.8-27b:free"),
+    (nvidia_client, "deepseek-ai/deepseek-v4.1-flash"),
     (openrouter_client, "google/gemma-4-31b-it:free"),
     (openrouter_client, "google/gemma-4-26b-a4b-it:free"),
-    (gemini_client, "gemini-3.8-flash"),
 ]
 
 SYSTEM_PROMPT = """You are a SQL expert. Given a database schema and a question, \
