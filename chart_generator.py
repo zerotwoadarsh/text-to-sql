@@ -38,9 +38,6 @@ Result columns: {columns}
 
 Chart decision (JSON only):"""
 
-    # Try up to 2 times total -- chart decisions are quick/cheap, and a
-    # transient timeout shouldn't cost the user their chart if a second
-    # attempt would succeed.
     for attempt in range(2):
         try:
             raw = call_with_fallback_raw([

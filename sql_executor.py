@@ -18,10 +18,7 @@ def execute_sql(sql: str) -> dict:
     clean_sql = result
 
     try:
-        # Open connection in read-only mode using SQLite's URI syntax.
-        # "mode=ro" means the connection will refuse any write attempt at the OS/file level,
-        # not just at the application logic level -- a second layer of defense
-        # beyond the validate_sql() check above.
+        
         conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
         df = pd.read_sql_query(clean_sql, conn)
         conn.close()
@@ -39,8 +36,8 @@ if __name__ == "__main__":
     test_queries = [
         "SELECT COUNT(*) FROM Customer;",
         "SELECT * FROM Customer LIMIT 3;",
-        "SELECT * FROM NonExistentTable;",   # should fail cleanly
-        "SELECT Name FORM Track;",            # typo: FORM instead of FROM, should fail cleanly
+        "SELECT * FROM NonExistentTable;",   
+        "SELECT Name FORM Track;",            
     ]
 
     for sql in test_queries:
