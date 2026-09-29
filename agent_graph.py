@@ -4,7 +4,7 @@ from agent_state import AgentState
 from schema_inspector import get_schema_context
 from sql_generator import call_with_fallback, SYSTEM_PROMPT
 from sql_executor import execute_sql
-
+from chart_generator import decide_chart, render_chart
 
 def generate_sql_node(state: AgentState) -> dict:
     print(f"\n[generate_sql] Attempt {state['retry_count'] + 1}")
@@ -70,21 +70,44 @@ def execute_sql_node(state: AgentState) -> dict:
             "success": False,
             "retry_count": state["retry_count"] + 1,
         }
+    
+def generate_chart_node(state: AgentState) -> dict:
+    """
+    Decides on and renders a chart for the successfully-retrieved data.
+    Only reached when execute_sql_node has already succeeded.
+    Chart failures here are non-fatal -- the agent still returns its data
+    successfully even if charting itself has a problem.
+    """
+    data = state["data"]
+    columns = list(data.columns)
+
+    try:
+        decision = decide_chart(state["question"], columns)
+        chart_path = render_chart(data, decision)
+        print(f"[generate_chart] Decision: {decision}, saved to: {chart_path}")
+    except Exception as e:
+        print(f"[generate_chart] Chart generation failed (non-fatal): {e}")
+        chart_path = None
+
+    return {"chart_path": chart_path}    
+
+
 
 def route_after_execution(state: AgentState) -> str:
-    """Decides whether to retry, give up, or finish."""
+    """Decides whether to chart-and-finish, retry, or give up."""
     if state["success"]:
-        return "done"
+        return "chart"
     if state["retry_count"] >= state["max_retries"]:
         return "give_up"
     return "retry"
 
 
-# --- Build the graph ---
+# graph 
 builder = StateGraph(AgentState)
 
 builder.add_node("generate_sql", generate_sql_node)
 builder.add_node("execute_sql", execute_sql_node)
+builder.add_node("generate_chart", generate_chart_node)
 
 builder.add_edge(START, "generate_sql")
 builder.add_edge("generate_sql", "execute_sql")
@@ -93,24 +116,27 @@ builder.add_conditional_edges(
     "execute_sql",
     route_after_execution,
     {
-        "done": END,
+        "chart": "generate_chart",
         "give_up": END,
         "retry": "generate_sql",
     },
 )
+
+builder.add_edge("generate_chart", END)
 
 graph = builder.compile()
 
 
 if __name__ == "__main__":
     initial_state = {
-        "question": "What's the average invoice total per customer, but only for customers whose favorite genre is Rock, ordered by their spending rank?",
+        "question": "What are the top 5 best-selling tracks by total quantity sold?",
         "sql": None,
         "error": None,
         "data": None,
         "retry_count": 0,
         "max_retries": 3,
         "success": False,
+        "chart_path": None,
     }
 
     final_state = graph.invoke(initial_state)
@@ -119,6 +145,7 @@ if __name__ == "__main__":
     print("Success:", final_state["success"])
     print("SQL used:", final_state["sql"])
     print("Retry count:", final_state["retry_count"])
+    print("Chart path:", final_state["chart_path"])
     if final_state["success"]:
         print("Data:\n", final_state["data"])
     else:

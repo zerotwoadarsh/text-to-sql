@@ -103,6 +103,69 @@ def call_with_fallback(messages, max_tokens=1500) -> str:
 
     raise RuntimeError("All fallback models failed.")
 
+def call_with_fallback_raw(messages, max_tokens=500) -> str:
+    """
+    Tries each (client, model) pair in FALLBACK_MODELS in order until one
+    returns non-empty content. Returns the RAW response text, unprocessed --
+    callers are responsible for any format-specific extraction (SQL, JSON, etc).
+    Raises RuntimeError if every option fails or returns empty content.
+    """
+    for client, model in FALLBACK_MODELS:
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                max_tokens=max_tokens,
+                messages=messages,
+            )
+            raw_content = response.choices[0].message.content
+
+            if not raw_content or not raw_content.strip():
+                print(f"[Model {model} returned empty content, trying next]")
+                continue
+
+            print(f"[Using model: {model}]")
+            return raw_content
+
+        except Exception as e:
+            print(f"[Failed with {model}: {e}]")
+            time.sleep(0.5)
+
+    raise RuntimeError("All fallback models failed.")
+
+
+def call_with_fallback(messages, max_tokens=500) -> str:
+    """
+    SQL-specific wrapper: calls call_with_fallback_raw, then extracts and
+    validates that the response actually contains a SQL statement (WITH/SELECT).
+    Used by the SQL generation pipeline specifically.
+    """
+    for client, model in FALLBACK_MODELS:
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                max_tokens=max_tokens,
+                messages=messages,
+            )
+            raw_content = response.choices[0].message.content
+
+            if not raw_content or not raw_content.strip():
+                print(f"[Model {model} returned empty content, trying next]")
+                continue
+
+            content = extract_sql(raw_content)
+
+            if content is None:
+                print(f"[Model {model} never produced a SELECT statement (likely still reasoning), trying next]")
+                continue
+
+            print(f"[Using model: {model}]")
+            return content
+
+        except Exception as e:
+            print(f"[Failed with {model}: {e}]")
+            time.sleep(0.5)
+
+    raise RuntimeError("All fallback models failed.")
 
 def generate_sql(question: str) -> str:
     """

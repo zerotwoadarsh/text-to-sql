@@ -9,3 +9,4 @@ class AgentState(TypedDict):
     retry_count: int
     max_retries: int
     success: bool
+    chart_path: Optional[str]

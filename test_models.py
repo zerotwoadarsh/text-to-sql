@@ -13,7 +13,6 @@ response = requests.get(
 print("Status:", response.status_code)
 data = response.json()
 
-# Print only free models
 free_models = [m["id"] for m in data.get("data", []) if m["id"].endswith(":free")]
 print("Free models available right now:")
 for m in free_models:
