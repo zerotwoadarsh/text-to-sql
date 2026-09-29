@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+// eslint-disable-next-line no-constant-binary-expression
+const API_BASE_URL = "https://text-to-sql-wdia.onrender.com" || "http://localhost:8000";
 
 export async function askQuestion(question) {
   const response = await fetch(`${API_BASE_URL}/ask`, {
