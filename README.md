@@ -2,7 +2,7 @@
 
 A natural language interface to a SQL database. Ask a question in plain English, and the agent inspects the database schema, generates SQL, validates and executes it safely, self-corrects if the query fails, and produces a chart of the results — all through a React frontend backed by a LangGraph agent.
 
-**Live demo:** [your-vercel-url.vercel.app](https://your-vercel-url.vercel.app)
+**Live demo:** [https://textedsql.vercel.app/]
 
 ---
 
